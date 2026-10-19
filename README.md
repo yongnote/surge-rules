@@ -1,6 +1,6 @@
 # Surge 广告拦截模块
 
-此仓库由 OpenAI dots 创建。
+此项目由 OpenAI Dots 创建。
 
 `sr_ad_only.sgmodule` 是 [Johnshall / Shadowrocket-ADBlock-Rules-Forever](https://github.com/Johnshall/Shadowrocket-ADBlock-Rules-Forever) 的 [sr_ad_only.conf](https://johnshall.github.io/Shadowrocket-ADBlock-Rules-Forever/sr_ad_only.conf) 自动同步转换版本。
 
