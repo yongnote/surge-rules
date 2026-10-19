@@ -1,9 +1,10 @@
 #!name=Shadowrocket AD Only (Surge)
-#!desc=Static conversion of johnshall sr_ad_only.conf; downloaded 2026-10-19 UTC. May cause false positives.
+#!desc=Daily upstream conversion; may cause false positives.
 # Source: https://johnshall.github.io/Shadowrocket-ADBlock-Rules-Forever/sr_ad_only.conf
-# Snapshot only: upstream changes require regenerating this module.
-# REJECT policy normalized; 3 IPv4 CIDRs canonicalized to equivalent networks.
-# No no-resolve added, to preserve source IP matching behavior.
+# Attribution: Johnshall/Shadowrocket-ADBlock-Rules-Forever, based on h2y/Shadowrocket-ADBlock-Rules.
+# License: CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/
+# Changes: Surge metadata, REJECT capitalization and equivalent canonical IPv4 networks.
+# No no-resolve added; source IP matching behavior preserved.
 
 [Rule]
 #
