@@ -21,31 +21,35 @@ def convert(source):
             converted.append(raw)
             continue
         fields = [p.strip() for p in line.split(",")]
-        if len(fields) != 3 or fields[2].upper() != "REJECT":
+        if len(fields) < 3 or fields[2].upper() != "REJECT" or not all(fields):
             raise ValueError("Unexpected rule structure or policy")
-        kind, value, _ = fields
-        if kind == "IP-CIDR":
+        kind, value = fields[:2]
+        params = fields[3:]
+        if kind in ("IP-CIDR", "IP-CIDR6"):
             network = ipaddress.ip_network(value, strict=False)
-            if network.version != 4:
+            if network.version != (4 if kind == "IP-CIDR" else 6):
                 raise ValueError("Unexpected IP version")
             value = str(network)
+            # Preserve other parameters and emit exactly one no-resolve flag.
+            params = [p for p in params if p.lower() != "no-resolve"]
+            params.append("no-resolve")
         elif kind == "DOMAIN-SUFFIX":
-            if not re.fullmatch(r"[A-Za-z0-9_.-]+", value):
+            if params or not re.fullmatch(r"[A-Za-z0-9_.-]+", value):
                 raise ValueError("Invalid domain")
         else:
             raise ValueError("Unsupported rule type")
-        converted.append(f"{kind},{value},REJECT")
+        converted.append(",".join([kind, value, "REJECT", *params]))
         count += 1
     if count < 10000 or count > 250000:
         raise ValueError(f"Suspicious rule count: {count}")
     header = (
         "#!name=Shadowrocket AD Only (Surge)\n"
-        "#!desc=Daily upstream conversion; may cause false positives.\n"
+        "#!desc=Weekly upstream conversion; may cause false positives.\n"
         f"# Source: {URL}\n"
         "# Attribution: Johnshall/Shadowrocket-ADBlock-Rules-Forever, based on h2y/Shadowrocket-ADBlock-Rules.\n"
         "# License: CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/\n"
-        "# Changes: Surge metadata, REJECT capitalization and equivalent canonical IPv4 networks.\n"
-        "# No no-resolve added; source IP matching behavior preserved.\n\n"
+        "# Changes: Surge metadata, REJECT capitalization and equivalent canonical IP networks.\n"
+        "# IP rules use no-resolve to avoid triggering DNS; unresolved domains skip IP rules.\n\n"
     )
     return header + "\n".join(converted) + "\n", count
 
@@ -57,7 +61,7 @@ def main():
     result, count = convert(data.decode("utf-8-sig"))
     if TARGET.exists():
         previous = TARGET.read_text(encoding="utf-8")
-        old_count = sum(line.startswith(("DOMAIN-SUFFIX,", "IP-CIDR,")) for line in previous.splitlines())
+        old_count = sum(line.startswith(("DOMAIN-SUFFIX,", "IP-CIDR,", "IP-CIDR6,")) for line in previous.splitlines())
         if old_count and not 0.5 * old_count <= count <= 2 * old_count:
             raise ValueError("Rule count changed by more than safety threshold")
         if previous == result:
