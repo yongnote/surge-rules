@@ -23,13 +23,3 @@ GitHub Actions 每周一北京时间 08:30（UTC 周一 00:30）下载、校验�
 请通过 URL 在 Surge 中安装远程模块，以保留远程更新来源。Surge 支持自动检查模块更新，设备检查时间不保证与仓库同步。
 
 参考：[Surge 官方模块文档](https://manual.nssurge.com/profile/module.html)。
-
-## 新增：国内外分流 + 广告过滤
-
-另提供上游 `sr_cnip_ad.conf` 的 Surge 转换，源自国内外分流版，不是 top500 白名单版：
-
-- [`sr_cnip_ad.dconf`](sr_cnip_ad.dconf)：保留上游顺序的 `[Rule]` 分离段，适合接入已有节点配置。
-- [`sr_cnip_ad.conf`](sr_cnip_ad.conf)：可导入的独立模板，不含节点或凭据；`PROXY = select, REJECT` 是待配置的安全占位，接入实际代理前无法正常代理上网。
-- [接入步骤、兼容差异与验证记录](docs/sr_cnip_ad.md)：包括 IPv6、CIDR、no-resolve、General、可选重写/MITM 的说明及输入来源记录。
-
-新文件带自定义代理组引用和末尾 FINAL，不是模块。旧广告模块、原转换脚本及上述每周更新流程均保持原样；新增 CNIP 文件尚未接入定时更新。已完成静态检查与新旧测试，未在真实 Surge 客户端加载。
