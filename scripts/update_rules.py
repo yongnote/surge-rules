@@ -8,7 +8,24 @@ import tempfile
 import urllib.request
 
 URL = "https://johnshall.github.io/Shadowrocket-ADBlock-Rules-Forever/sr_ad_only.conf"
-TARGET = Path("sr_ad_only.sgmodule")
+MODULE = Path("sr_ad_only.sgmodule")
+RULES = Path("sr_ad_only.list")
+RULES_URL = "https://raw.githubusercontent.com/yongnote/surge-rules/main/sr_ad_only.list"
+RULE_TYPES = ("DOMAIN-SUFFIX,", "IP-CIDR,", "IP-CIDR6,")
+MODULE_HEADER = (
+    "#!name=Shadowrocket AD Only (Surge)\n"
+    "#!desc=Weekly upstream conversion; may cause false positives.\n"
+)
+ATTRIBUTION = (
+    f"# Source: {URL}\n"
+    "# Attribution: Johnshall/Shadowrocket-ADBlock-Rules-Forever, based on h2y/Shadowrocket-ADBlock-Rules.\n"
+    "# License: CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/\n"
+    "# Changes: external rule set, canonical IP networks, and no-resolve for IP rules.\n"
+)
+
+def module_text():
+    return f"{MODULE_HEADER}{ATTRIBUTION}\n[Rule]\nRULE-SET,{RULES_URL},REJECT\n"
+
 
 def convert(source):
     lines = source.splitlines()
@@ -17,8 +34,11 @@ def convert(source):
     converted, count = [], 0
     for raw in lines:
         line = raw.strip()
-        if not line or line.startswith(("#", ";")) or line == "[Rule]":
-            converted.append(raw)
+        if line == "[Rule]":
+            continue
+        if not line or line.startswith(("#", ";", "//")):
+            # Keep upstream comments as comments, including lines that look like directives.
+            converted.append("# " + line if line.startswith("#!") else raw)
             continue
         fields = [p.strip() for p in line.split(",")]
         if len(fields) < 3 or fields[2].upper() != "REJECT" or not all(fields):
@@ -38,20 +58,20 @@ def convert(source):
                 raise ValueError("Invalid domain")
         else:
             raise ValueError("Unsupported rule type")
-        converted.append(",".join([kind, value, "REJECT", *params]))
+        converted.append(",".join([kind, value, *params]))
         count += 1
     if count < 10000 or count > 250000:
         raise ValueError(f"Suspicious rule count: {count}")
-    header = (
-        "#!name=Shadowrocket AD Only (Surge)\n"
-        "#!desc=Weekly upstream conversion; may cause false positives.\n"
-        f"# Source: {URL}\n"
-        "# Attribution: Johnshall/Shadowrocket-ADBlock-Rules-Forever, based on h2y/Shadowrocket-ADBlock-Rules.\n"
-        "# License: CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/\n"
-        "# Changes: Surge metadata, REJECT capitalization and equivalent canonical IP networks.\n"
-        "# IP rules use no-resolve to avoid triggering DNS; unresolved domains skip IP rules.\n\n"
-    )
-    return header + "\n".join(converted) + "\n", count
+    return ATTRIBUTION + "\n" + "\n".join(converted) + "\n", count
+
+def write_atomic(path, content):
+    fd, temporary = tempfile.mkstemp(prefix=".surge-", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as output:
+            output.write(content)
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
 
 def main():
     with urllib.request.urlopen(URL, timeout=60) as response:
@@ -59,21 +79,17 @@ def main():
     if len(data) > 20_000_000:
         raise ValueError("Source exceeds size limit")
     result, count = convert(data.decode("utf-8-sig"))
-    if TARGET.exists():
-        previous = TARGET.read_text(encoding="utf-8")
-        old_count = sum(line.startswith(("DOMAIN-SUFFIX,", "IP-CIDR,", "IP-CIDR6,")) for line in previous.splitlines())
-        if old_count and not 0.5 * old_count <= count <= 2 * old_count:
-            raise ValueError("Rule count changed by more than safety threshold")
-        if previous == result:
-            print(f"Unchanged: {count} validated rules")
-            return
-    fd, temporary = tempfile.mkstemp(prefix=".surge-", dir=TARGET.parent)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as output:
-            output.write(result)
-        os.replace(temporary, TARGET)
-    finally:
-        Path(temporary).unlink(missing_ok=True)
+    previous = RULES.read_text(encoding="utf-8") if RULES.exists() else ""
+    baseline = previous or (MODULE.read_text(encoding="utf-8") if MODULE.exists() else "")
+    old_count = sum(line.startswith(RULE_TYPES) for line in baseline.splitlines())
+    if old_count and not 0.5 * old_count <= count <= 2 * old_count:
+        raise ValueError("Rule count changed by more than safety threshold")
+    module = module_text()
+    if previous == result and MODULE.exists() and MODULE.read_text(encoding="utf-8") == module:
+        print(f"Unchanged: {count} validated rules")
+        return
+    write_atomic(RULES, result)
+    write_atomic(MODULE, module)
     print(f"Updated: {count} validated rules")
 
 if __name__ == "__main__":

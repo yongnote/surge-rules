@@ -22,12 +22,12 @@ jobs:
       - name: Publish only validated changes
         shell: bash
         run: |
-          if git diff --quiet -- sr_ad_only.sgmodule; then
+          if [[ -z "$(git status --porcelain -- sr_ad_only.sgmodule sr_ad_only.list)" ]]; then
             echo "No rule changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- sr_ad_only.sgmodule
+          git add -- sr_ad_only.sgmodule sr_ad_only.list
           git commit -m "Update validated Surge ad-blocking rules"
           git push origin HEAD:main
