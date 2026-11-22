@@ -12,6 +12,8 @@ MODULE = Path("sr_ad_only.sgmodule")
 RULES = Path("sr_ad_only.list")
 RULES_URL = "https://raw.githubusercontent.com/yongnote/surge-rules/main/sr_ad_only.list"
 RULE_TYPES = ("DOMAIN-SUFFIX,", "IP-CIDR,", "IP-CIDR6,")
+# Google account UI requests: leave this host to the profile’s normal routing.
+EXCLUDED_DOMAIN_SUFFIXES = {"ogads-pa.googleapis.com"}
 MODULE_HEADER = (
     "#!name=Shadowrocket AD Only (Surge)\n"
     "#!desc=Weekly upstream conversion; may cause false positives.\n"
@@ -56,6 +58,8 @@ def convert(source):
         elif kind == "DOMAIN-SUFFIX":
             if params or not re.fullmatch(r"[A-Za-z0-9_.-]+", value):
                 raise ValueError("Invalid domain")
+            if value.lower().rstrip(".") in EXCLUDED_DOMAIN_SUFFIXES:
+                continue
         else:
             raise ValueError("Unsupported rule type")
         converted.append(",".join([kind, value, *params]))

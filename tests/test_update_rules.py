@@ -47,6 +47,21 @@ class ConvertTests(unittest.TestCase):
         self.assertIn("DOMAIN-SUFFIX,first.example\n# #!unsafe=ignored\n"
                       "IP-CIDR,192.0.2.0/24,no-resolve\n", result)
 
+    def test_google_storage_exception_only_removes_matching_suffix_rules(self):
+        source = "[Rule]\n" + "DOMAIN-SUFFIX,example.com,REJECT\n" * 10000
+        source += (
+            "DOMAIN-SUFFIX,ogads-pa.googleapis.com,REJECT\n"
+            "DOMAIN-SUFFIX,OGADS-PA.GOOGLEAPIS.COM.,REJECT\n"
+            "DOMAIN-SUFFIX,mail-ads.google.com,REJECT\n"
+            "DOMAIN-SUFFIX,another-ogads-pa.googleapis.com,REJECT\n"
+        )
+        result, count = convert(source)
+        self.assertEqual(count, 10002)
+        self.assertNotIn("DOMAIN-SUFFIX,ogads-pa.googleapis.com", result)
+        self.assertNotIn("DOMAIN-SUFFIX,OGADS-PA.GOOGLEAPIS.COM.", result)
+        self.assertIn("DOMAIN-SUFFIX,mail-ads.google.com\n", result)
+        self.assertIn("DOMAIN-SUFFIX,another-ogads-pa.googleapis.com\n", result)
+
     def test_invalid_rules_still_rejected(self):
         for rule in (
             "IP-CIDR,2001:db8::/32,REJECT",
