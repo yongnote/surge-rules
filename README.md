@@ -18,6 +18,10 @@
 
 - `ogads-pa.googleapis.com` 不纳入本模块的拦截名单，避免 Gmail 的 Google 存储用量无法显示。此例外由转换脚本保留，后续每周同步不会重新加回。该请求继续按 Surge 配置的原有规则路由，本模块不指定直连或代理。
 
+## 内联版（静态）
+
+`sr_ad_only_inline.sgmodule` 是拆分为外部规则集之前的独立模块。规则直接写在 `[Rule]` 内，只去掉了 `ogads-pa.googleapis.com` 的拦截；不随每周任务更新。需要使用时，在 Surge 里与自动更新版二选一，不要同时启用。内联规则较多，载入可能较慢。
+
 ## 使用与限制
 
 模块通过一条 `RULE-SET` 引用独立的 `sr_ad_only.list`，而不是注入数万条内联规则。规则顺序、统一的 `REJECT` 策略和 IP 规则的 `no-resolve` 保留。已安装的用户更新原模块即可。
