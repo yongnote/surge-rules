@@ -25,8 +25,20 @@ ATTRIBUTION = (
     "# Changes: external rule set, canonical IP networks, and no-resolve for IP rules.\n"
 )
 
+ZHIHU_SPLASH_PATHS = ("launch_v2", "real_time_launch_v2")
+
+
 def module_text():
-    return f"{MODULE_HEADER}{ATTRIBUTION}\n[Rule]\nRULE-SET,{RULES_URL},REJECT\n"
+    zhihu_rules = "".join(
+        rf"^https://api\.zhihu\.com/commercial_api/{path}/?(?:[?#]|$) _ reject" + "\n"
+        for path in ZHIHU_SPLASH_PATHS
+    )
+    return (
+        f"{MODULE_HEADER}{ATTRIBUTION}\n[Rule]\nRULE-SET,{RULES_URL},REJECT\n"
+        "\n[URL Rewrite]\n"
+        "# Zhihu launch ads; HTTPS decryption for api.zhihu.com is opt-in in the profile.\n"
+        f"{zhihu_rules}"
+    )
 
 
 def convert(source):

@@ -7,3 +7,8 @@
 
 [Rule]
 RULE-SET,https://raw.githubusercontent.com/yongnote/surge-rules/main/sr_ad_only.list,REJECT
+
+[URL Rewrite]
+# Zhihu launch ads; HTTPS decryption for api.zhihu.com is opt-in in the profile.
+^https://api\.zhihu\.com/commercial_api/launch_v2/?(?:[?#]|$) _ reject
+^https://api\.zhihu\.com/commercial_api/real_time_launch_v2/?(?:[?#]|$) _ reject

@@ -1,3 +1,4 @@
+import re
 import unittest
 
 from scripts.update_rules import convert, module_text, RULES_URL
@@ -34,9 +35,37 @@ class ConvertTests(unittest.TestCase):
         self.assertNotIn("[Rule]", result)
         self.assertNotIn(",REJECT", result)
 
-    def test_module_only_references_external_set(self):
-        self.assertEqual(module_text().split("[Rule]\n", 1)[1],
+    def test_module_keeps_external_set_and_does_not_enable_mitm(self):
+        module = module_text()
+        self.assertEqual(module.split("[Rule]\n", 1)[1].split("\n[URL Rewrite]", 1)[0],
                          f"RULE-SET,{RULES_URL},REJECT\n")
+        self.assertNotIn("[MITM]", module)
+        self.assertNotIn("[Script]", module)
+
+    def test_zhihu_rewrite_matches_only_splash_paths(self):
+        rules = [
+            line.split()
+            for line in module_text().split("[URL Rewrite]\n", 1)[1].splitlines()
+            if line and not line.startswith("#")
+        ]
+        self.assertEqual(len(rules), 2)
+        for _, replacement, action in rules:
+            self.assertEqual((replacement, action), ("_", "reject"))
+        base = "https://api.zhihu.com/commercial_api/"
+        for path in ("launch_v2", "real_time_launch_v2"):
+            for suffix in ("", "?foo=1", "/?foo=1"):
+                self.assertEqual(sum(bool(re.search(pattern, base + path + suffix))
+                                     for pattern, _, _ in rules), 1)
+        for url in (
+            base + "launch_v20",
+            base + "launch_v2/other",
+            base + "real_time_launch_v2_extra",
+            base + "app_float_layer",
+            "https://api.zhihu.com/topstory/recommend",
+            "https://api.zhihu.com.attacker.example/commercial_api/launch_v2",
+            "https://api-zhihu.com/commercial_api/launch_v2",
+        ):
+            self.assertFalse(any(re.search(pattern, url) for pattern, _, _ in rules), url)
 
     def test_order_and_comments(self):
         result = self.convert_rules(
