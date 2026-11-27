@@ -26,6 +26,14 @@
 
 `sr_ad_only_inline.sgmodule` 是拆分为外部规则集之前的独立模块。规则直接写在 `[Rule]` 内，只去掉了 `ogads-pa.googleapis.com` 的拦截；不随每周任务更新。需要使用时，在 Surge 里与自动更新版二选一，不要同时启用。内联规则较多，载入可能较慢。
 
+## 小红书域名白名单（独立模块）
+
+在 Surge 的「模块」中用 [xiaohongshu_allowlist.sgmodule 的 Raw 安装地址](https://raw.githubusercontent.com/yongnote/surge-rules/main/xiaohongshu_allowlist.sgmodule) 添加，再单独启用。模块为静态规则，不由每周任务维护，不修改原广告模块，不要求 HTTPS 解密。
+
+- 根据 [V2EX 帖子](https://www.v2ex.com/t/1151745) 改写：先放行九个业务域名，再拒绝两个主域下其余请求和广告素材域名。不拦全局 DNS 或整个图片 CDN。
+- 网页版默认使用已有的 `Proxy` 策略；若配置没有该策略，可在模块参数把 `web_policy` 改为 `DIRECT` 或已有策略名称。
+- 原帖清单可能随 App 更新而失效。启用后检查刷帖、搜索、评论和收藏；异常时先停用模块做对照，并查看「最近请求」实际命中的规则。若此前已手动把同一组规则加到主配置，使用本模块时可移除那组重复规则，以便停用模块能恢复原行为。
+
 ## 使用与限制
 
 模块通过一条 `RULE-SET` 引用独立的 `sr_ad_only.list`，而不是注入数万条内联规则。规则顺序、统一的 `REJECT` 策略和 IP 规则的 `no-resolve` 保留。已安装的用户更新原模块即可。
