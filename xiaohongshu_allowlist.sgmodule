@@ -1,0 +1,19 @@
+#!name=小红书域名白名单
+#!desc=放行常用小红书域名，拦截其余两个主域下的请求及广告素材域名。无需 HTTPS 解密。
+#!arguments=web_policy:Proxy
+#!arguments-desc=web_policy：小红书网页版策略，默认为 Proxy。若当前配置没有该策略，请改为 DIRECT 或已有策略名。
+
+[Rule]
+# 先精确放行，再按后缀拒绝
+DOMAIN,ci.xiaohongshu.com,DIRECT
+DOMAIN,edith.xiaohongshu.com,DIRECT
+DOMAIN,miniprogram.xiaohongshu.com,DIRECT
+DOMAIN,pages.xiaohongshu.com,DIRECT
+DOMAIN,picasso-static.xiaohongshu.com,DIRECT
+DOMAIN,rec.xiaohongshu.com,DIRECT
+DOMAIN,so.xiaohongshu.com,DIRECT
+DOMAIN,live-room.xiaohongshu.com,DIRECT
+DOMAIN,www.xiaohongshu.com,{{{web_policy}}}
+DOMAIN-SUFFIX,xiaohongshu.com,REJECT
+DOMAIN-SUFFIX,redbascket.com,REJECT
+DOMAIN-WILDCARD,ads-*.xhscdn.com,REJECT
